@@ -1,0 +1,76 @@
+<html>
+
+<head>
+    <title>E la vamos nós!</title>
+</head>
+<style>
+    canvas {
+        border-style: solid;
+        border-width: 1px;
+        width: 400px;
+        height: 400px;
+        border-color: black;
+        image-rendering: -moz-crisp-edges;
+        image-rendering: -webkit-crisp-edges;
+        image-rendering: crisp-edges;
+        image-rendering: pixelated;
+    }
+</style>
+<script src="/socket.io/socket.io.js"></script>
+<script type="module">
+    import game from "./game.js"
+    import keyboardListener from "./keyboard-listener.js"
+    import renderScreen from "./render-screen.js"
+
+    const keyboardListenerInstance = keyboardListener()
+
+    const socket = io()
+
+    socket.on('connect', () => {
+        const currentPlayerId = socket.id
+        const gameInstance = game(currentPlayerId)
+
+        gameInstance.subscribe((command) => {
+            socket.emit(command.type, command)
+        })
+
+        socket.on('state', (state) => {
+            gameInstance.state.players = state.players
+            gameInstance.state.fruits = state.fruits
+
+            keyboardListenerInstance.subscribe((command) => {
+                gameInstance.playerAction(command)
+            })
+
+            renderScreen(gameInstance)
+        })
+
+        socket.on('addPlayer', (command) => {
+            console.log(command)
+            gameInstance.addPlayer(command)
+            console.log(gameInstance.state.players)
+        })
+
+        socket.on('removePlayer', (command) => {
+            gameInstance.removePlayer(command)
+        })
+
+        socket.on('addFruit', (command) => {
+            gameInstance.addFruit(command)
+        })
+
+        socket.on('removeFruit', (command) => {
+            gameInstance.removeFruit(command)
+        })
+
+        socket.on('playerAction', (command) => {
+            gameInstance.playerAction(command)
+        })
+    })
+</script>
+
+<body>
+    <canvas id="arena" width="10" height="10"></canvas>
+</body>
+
+</html>
